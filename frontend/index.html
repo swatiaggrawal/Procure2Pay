@@ -70,7 +70,7 @@ textarea{min-height:84px;resize:vertical}
 .step{flex:1;min-width:160px;padding:12px 14px;border-top:4px solid var(--line);background:#f8faff;border-radius:0 0 10px 10px;display:flex;flex-direction:column;gap:2px;font-size:14px}
 .step b{font-weight:700}.step em{font-style:normal;color:var(--mute)}
 .step.approved{border-color:#46a758}.step.rejected{border-color:#e5484d}.step.query{border-color:#3b82f6}
-.step.now{border-color:#f5a524;background:#fff8ea}
+.step.cur{border-color:#f5a524;background:#fff8ea}
 .step q{display:block;margin-top:4px;color:var(--ink);quotes:none;font-style:italic}
 dl{display:grid;grid-template-columns:200px 1fr;gap:8px 18px;margin:0}
 dt{color:var(--mute)}dd{margin:0;white-space:pre-wrap}
@@ -86,6 +86,15 @@ dt{color:var(--mute)}dd{margin:0;white-space:pre-wrap}
 .err{color:var(--rejected)}.stuck{color:var(--pending);font-weight:700}.mute{color:var(--mute)}
 #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 20px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;z-index:9;box-shadow:0 8px 24px rgba(0,0,0,.25)}
 #toast.show{opacity:1}#toast.bad{background:var(--rejected)}
+.demopill{display:flex;align-items:center;gap:10px;margin:0 0 12px auto;width:max-content;padding:6px 8px 6px 14px;background:#fff;border:1px solid #dbe2ef;border-radius:999px;font-weight:600;font-size:13px;color:#1e293b}
+.row-between{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.tgl{position:relative;display:inline-block;width:42px;height:24px;flex:none;margin:0;cursor:pointer}
+.tgl input{opacity:0;width:0;height:0;position:absolute}
+.tgl .knob{position:absolute;inset:0;background:#cbd5e1;border-radius:24px;transition:.2s}
+.tgl .knob:before{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
+.tgl input:checked+.knob{background:#2563eb}
+.tgl input:checked+.knob:before{transform:translateX(18px)}
+.tgl input:focus-visible+.knob{outline:2px solid #2563eb;outline-offset:2px}
 .quick{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 4px}
 .cfg{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}.cfg select{margin:0;width:auto;min-width:220px}.cfg input{width:150px;margin:0}
 .fbar{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;align-items:end}
@@ -230,7 +239,7 @@ function vLogin() {
   $('#app').innerHTML = `<div class="auth"><section class="hero">${BRAND}<h1>Every purchase, one clear trail.</h1>
     <p>From the first office note to the payment advice: approvals, SAP numbers, vendor invoices and an audit log in one place.</p>
     <ol class="flow"><li>ION</li><li>IOM</li><li>PR / PO</li><li>Vendor invoice</li><li>Paid</li></ol></section>
-    <section class="panel"><form class="card" onsubmit="return signIn(event)"><h3>Sign in</h3><label>Username<input name="u" autocomplete="username" required></label>
+    <section class="panel"><div id="demobar"></div><form class="card" onsubmit="return signIn(event)"><h3>Sign in</h3><label>Username<input name="u" autocomplete="username" required></label>
     <label>Password<input name="p" type="password" autocomplete="current-password" required></label>
     <button class="primary" type="submit" style="width:100%">Log in</button></form><div id="demo" style="max-width:440px;width:100%"></div></section></div>`;
   fillDemo();
@@ -240,12 +249,17 @@ async function fillDemo() {
   if (!PUB.demo_mode || !$('#demo')) return;
   const cos = [...new Set(PUB.users.map(u => u.company).filter(Boolean))];
   const pick = r => PUB.users.filter(u => r.includes(u.role));
-  $('#demo').innerHTML = `<div class="card"><h3>Demo accounts</h3><p class="sub" style="margin-bottom:8px">Demo mode is on, so every password is ${esc(PUB.password)}. TRPL has an approved ION and a stuck IOM. HEPL has a paid invoice and one waiting at Accounts.</p>
+  const on = demoOn();
+  $('#demobar').innerHTML = `<label class="demopill">Demo mode<span class="tgl"><input type="checkbox" ${on ? 'checked' : ''} onchange="setDemo(this.checked)"><span class="knob"></span></span></label>`;
+  if (!on) { $('#demo').innerHTML = ''; return; }
+  $('#demo').innerHTML = `<div class="card"><h3 style="margin:0">Demo accounts</h3><p class="sub" style="margin:8px 0">Every password is ${esc(PUB.password)}. TRPL has an approved ION and a stuck IOM. HEPL has a paid invoice and one waiting at Accounts.</p>
     <label style="margin:0">Company staff<select id="qc">${cos.map(c => `<option ${c === 'HEPL' ? 'selected' : ''}>${c}</option>`).join('')}</select></label>
     <div class="quick">${STAFF.map(([k, t]) => `<button onclick="quick('${k}')">${t}</button>`).join('')}</div>
     <h3 style="margin-top:14px">Vendors</h3><div class="quick">${pick(['vendor']).map(v => `<button onclick="quickUser('${v.username}')">${esc(v.name)}</button>`).join('')}</div>
     <h3 style="margin-top:14px">Portal-wide</h3><div class="quick"><button onclick="quickUser('admin')">Admin</button><button onclick="quickUser('auditor')">Auditor (read only)</button></div></div>`;
 }
+const demoOn = () => { try { return localStorage.getItem('p2p_demo') !== '0'; } catch { return true; } };
+const setDemo = on => { store('p2p_demo', on ? '1' : '0'); fillDemo(); };
 async function signIn(e, direct) {
   if (e) e.preventDefault();
   const f = e && e.target, body = direct || { username: E(f,'u').value, password: E(f,'p').value };
@@ -492,7 +506,7 @@ function vDoc(id, d) {
       <div class="row" style="margin-bottom:14px"><button onclick="pdf(${d.id},0,'${d.ref}')">Download PDF</button>
         ${d.family.length > 1 ? `<button onclick="pdf(${d.id},1,'${d.ref}')">Download full record (PDF)</button>` : ''}</div>
       <div class="card"><h3>Document chain</h3>${tree}</div>
-      <div class="card"><h3>${isVendor ? 'Review status' : 'Approvals'}</h3>${d.steps.length ? `<ol class="steps">${d.steps.map(s => `<li class="step ${s.decision} ${s.level === d.current_level && d.status === 'PENDING' ? 'now' : ''}">
+      <div class="card"><h3>${isVendor ? 'Review status' : 'Approvals'}</h3>${d.steps.length ? `<ol class="steps">${d.steps.map(s => `<li class="step ${s.decision} ${s.level === d.current_level && d.status === 'PENDING' ? 'cur' : ''}">
         <small class="mute">Level ${s.level}</small><b>${esc(s.label)}</b>${s.approver !== s.label ? `<span>${esc(s.approver)}</span>` : ''}<em>${DECISION[s.decision]}${s.acted_at ? ', ' + when(s.acted_at) : ''}</em>${s.delegate ? `<em>by ${esc(s.delegate)}, as delegate</em>` : ''}${s.comment ? `<q>${esc(s.comment)}</q>` : ''}</li>`).join('')}</ol>`
         : `<p class="sub" style="margin:0">${d.doc_type === 'PRPO' && isVendor ? 'This purchase order is approved.' : 'The approval chain starts when this is submitted.'}</p>`}${note}</div>
       <div class="card" id="body"><h3>Details</h3><dl><dt>${d.amount_label}</dt><dd>${money(d.amount)}</dd>
@@ -696,7 +710,7 @@ async function vConfig(companyId) {
   const c = await api('/config' + (companyId ? '?company_id=' + companyId : glob ? '?company_id=1' : ''));
   const who = (t, l) => (t === 'INVOICE' ? `<option value="requester" ${l.kind === 'requester' ? 'selected' : ''}>The requester (whoever raised the PO)</option>` : '') +
     c.people.filter(p => c.roles_for[t].includes(p.role)).map(p => `<option value="${p.id}" ${l.kind !== 'requester' && p.id === l.approver_id ? 'selected' : ''}>${esc(p.name)}</option>`).join('');
-  const chainRow = (t, l) => admin ? `<div class="cfg"><span>L${l.level}</span><input class="lbl" value="${esc(l.label)}" placeholder="Step name" style="width:200px"><select class="who">${who(t, l)}</select><span>from INR</span><input class="lim" type="number" min="0" value="${l.min_amount}" ${l.level === 1 ? 'disabled' : ''}></div>`
+  const chainRow = (t, l) => admin ? `<div class="cfg"><span>L${l.level}</span><input class="lbl" value="${esc(l.label)}" placeholder="Step name" style="width:250px"><select class="who">${who(t, l)}</select><span>from INR</span><input class="lim" type="number" min="0" value="${l.min_amount}" ${l.level === 1 ? 'disabled' : ''}></div>`
     : `<div class="cfg"><span>L${l.level}</span><b>${esc(l.label)}</b><span>${esc(l.approver)}</span><span class="mute">${l.level === 1 ? 'always' : 'from ' + money(l.min_amount)}</span></div>`;
   const fieldRow = f => `<div class="cfg xf"><input class="fl" value="${esc(f.label)}" placeholder="Field name" style="width:220px"><select class="ft" style="min-width:130px">${FTYPES.map(([v, n]) => `<option value="${v}" ${v === f.ftype ? 'selected' : ''}>${n}</option>`).join('')}</select>
     <label style="margin:0;display:flex;gap:6px;align-items:center;font-weight:400"><input class="fr" type="checkbox" style="width:auto;margin:0" ${f.required ? 'checked' : ''}>Required</label><button type="button" onclick="this.parentElement.remove()">Remove</button></div>`;
