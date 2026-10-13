@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Approval portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@700;800&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f1f4fa;--card:#fff;--ink:#16203a;--mute:#5d6b85;--line:#e3e8f3;--accent:#1456c8;--accent-2:#0b3a8f;--accent-bg:#e8f0fd;
+--draft:#64748b;--pending:#b86e00;--query:#2563eb;--rejected:#d92d3a;--approved:#2f8f3a;--paid:#0b7f82;
+--sans:"Source Sans 3",system-ui,sans-serif;--head:"Manrope","Source Sans 3",system-ui,sans-serif;--mono:"IBM Plex Mono",ui-monospace,monospace;
+--shadow:0 1px 2px rgba(16,32,64,.05),0 4px 14px rgba(16,32,64,.05)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--sans)}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.shell{display:grid;grid-template-columns:248px 1fr;min-height:100vh}
+aside{background:linear-gradient(185deg,#0a1a46 0%,#0c2f80 55%,#1456c8 135%);color:#d6e0f5;padding:18px 14px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:6px;overflow:auto}
+.brand{display:flex;gap:11px;align-items:center;padding:4px 8px 18px}
+.brand .mark{width:38px;height:38px;border-radius:10px;background:#fff;color:#0c2f80;font:800 13px var(--head);display:grid;place-items:center;flex:none}
+.brand b{display:block;color:#fff;font:700 16px/1.15 var(--head)}.brand small{color:#a9bbe3;font-size:12.5px}
+aside nav{display:flex;flex-direction:column;gap:2px}
+aside nav a{color:#d6e0f5;padding:9px 12px;border-radius:9px;display:flex;align-items:center;gap:11px;font-weight:500}
+aside nav a:hover{background:rgba(255,255,255,.09);text-decoration:none}
+aside nav a.on{background:rgba(255,255,255,.17);color:#fff;box-shadow:inset 3px 0 0 #7fb2ff}
+aside nav a span:first-of-type{flex:1}
+.ico{width:18px;height:18px;flex:none}
+.badge{background:#f5a524;color:#2b1d00;border-radius:10px;padding:0 7px;font-size:12px;font-weight:700}
+.usercard{margin-top:auto;display:flex;align-items:center;gap:10px;padding:12px 8px 4px;border-top:1px solid rgba(255,255,255,.14)}
+.usercard div{flex:1;min-width:0}.usercard b{display:block;color:#fff;font-size:14px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.usercard small{color:#a9bbe3;font-size:12.5px}
+.av{width:34px;height:34px;border-radius:50%;background:#7fb2ff;color:#0a1a46;display:grid;place-items:center;font-weight:700;flex:none}
+.usercard button{background:rgba(255,255,255,.1);border:0;color:#fff;padding:7px;border-radius:8px;display:grid}
+.usercard button:hover{background:rgba(255,255,255,.2)}
+main{padding:28px 34px 64px;max-width:1240px;width:100%}
+h2{font:700 25px/1.2 var(--head);margin:0 0 4px;letter-spacing:-.01em}
+h3{font:700 16px/1.3 var(--head);margin:0 0 12px}
+.sub{color:var(--mute);margin:0 0 22px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin-bottom:16px;box-shadow:var(--shadow)}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.grow{flex:1}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-weight:600;color:var(--mute);font-size:12.5px;text-transform:uppercase;letter-spacing:.05em;padding:6px 10px;border-bottom:1px solid var(--line)}
+td{padding:10px;border-bottom:1px solid #edf0f7;vertical-align:top}
+tr.link{cursor:pointer}tr.link:hover td{background:#f5f8ff}
+.mono{font-family:var(--mono);font-size:14px}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.chip{display:inline-block;font-size:13px;font-weight:600;padding:1px 10px;border-radius:999px;border:1px solid currentColor;white-space:nowrap}
+.chip.DRAFT{color:var(--draft)}.chip.PENDING{color:var(--pending);background:#fff6e5}.chip.QUERY{color:var(--query);background:#eaf1ff}
+.chip.REJECTED{color:var(--rejected);background:#fdecee}.chip.APPROVED{color:var(--approved);background:#eaf7ec}.chip.PAID{color:var(--paid);background:#e0f5f5}
+button,.btn{font:inherit;font-weight:600;border-radius:9px;padding:8px 15px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;transition:background .15s,border-color .15s}
+button:hover{border-color:#b7c3dc;background:#f8faff}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}button.primary:hover{background:var(--accent-2);border-color:var(--accent-2)}
+button.danger{color:var(--rejected);border-color:#efb9bd}button.warn{color:var(--query);border-color:#b9cdf5}
+button.reset{background:#f0506e;border-color:#f0506e;color:#fff}button.reset:hover{background:#d93a58;border-color:#d93a58}
+button:disabled{opacity:.5;cursor:not-allowed}
+label{display:block;font-weight:600;margin:0 0 14px}
+input,select,textarea{display:block;width:100%;margin-top:4px;font:inherit;font-weight:400;padding:8px 11px;border:1px solid #d3dbea;border-radius:9px;background:#fff;color:var(--ink)}
+input:focus,select:focus,textarea:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 3px rgba(20,86,200,.15)}
+textarea{min-height:84px;resize:vertical}
+.filters{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center}.filters input,.filters select{margin:0;width:auto}
+.node{display:flex;align-items:center;gap:8px;padding:6px 12px;border:1px solid var(--line);background:#fff;border-radius:9px;color:var(--ink)}
+.tree,.tree ul{list-style:none;margin:0;padding:0}.tree ul{margin-left:14px;padding-left:20px;border-left:2px solid var(--line)}
+.tree li{margin:7px 0}.tree .node{display:inline-flex;font-size:15px}.tree .node .mono{font-weight:500}
+.node.here{background:var(--accent-bg);border-color:var(--accent);box-shadow:0 0 0 3px rgba(20,86,200,.12)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--draft);display:inline-block}
+.dot.PENDING{background:#f5a524}.dot.QUERY{background:#3b82f6}.dot.REJECTED{background:#e5484d}.dot.APPROVED{background:#46a758}.dot.PAID{background:#0f9d9f}
+.steps{display:flex;gap:10px;list-style:none;margin:0;padding:0;flex-wrap:wrap}
+.step{flex:1;min-width:160px;padding:12px 14px;border-top:4px solid var(--line);background:#f8faff;border-radius:0 0 10px 10px;display:flex;flex-direction:column;gap:2px;font-size:14px}
+.step b{font-weight:700}.step em{font-style:normal;color:var(--mute)}
+.step.approved{border-color:#46a758}.step.rejected{border-color:#e5484d}.step.query{border-color:#3b82f6}
+.step.now{border-color:#f5a524;background:#fff8ea}
+.step q{display:block;margin-top:4px;color:var(--ink);quotes:none;font-style:italic}
+dl{display:grid;grid-template-columns:200px 1fr;gap:8px 18px;margin:0}
+dt{color:var(--mute)}dd{margin:0;white-space:pre-wrap}
+.sapbox{border-left:3px solid var(--accent);padding:2px 0 2px 14px;margin-bottom:10px}.sapbox .mono{font-weight:500}
+.cm{padding:8px 0;border-bottom:1px solid #edf0f7}.cm small{color:var(--mute)}
+.mail{border-bottom:1px solid #edf0f7;padding:12px 0}.mail small{color:var(--mute);display:block}.mail pre{margin:6px 0 0;font:inherit;white-space:pre-wrap}
+.mail.new{border-left:3px solid var(--accent);background:#f0f5ff;padding-left:12px;cursor:pointer;border-radius:0 8px 8px 0}
+.mail.new b::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);margin-right:8px}
+.pick{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:18px}
+.pick button{text-align:left;padding:12px 14px;line-height:1.35}.pick button small{display:block;font-weight:400;color:var(--mute)}
+.pick button.on{border-color:var(--accent);background:var(--accent-bg)}
+.empty{color:var(--mute);padding:22px;text-align:center;border:1px dashed #cfd8ea;border-radius:10px}
+.err{color:var(--rejected)}.stuck{color:var(--pending);font-weight:700}.mute{color:var(--mute)}
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 20px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;z-index:9;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+#toast.show{opacity:1}#toast.bad{background:var(--rejected)}
+.quick{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 4px}
+.cfg{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}.cfg select{margin:0;width:auto;min-width:220px}.cfg input{width:150px;margin:0}
+.fbar{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;align-items:end}
+.fbar label{margin:0;font-size:14px;color:var(--mute);font-weight:600}.fbar input,.fbar select{color:var(--ink)}
+.presets{display:flex;gap:8px;margin:12px 0 0;flex-wrap:wrap;align-items:center}.presets button{padding:3px 11px;font-size:14px}
+.pager{display:flex;gap:10px;align-items:center;justify-content:flex-end;margin-top:12px;color:var(--mute);font-size:14px}
+.act{font-weight:700;font-size:12.5px;letter-spacing:.03em}.act-APPROVE,.act-PAYMENT{color:var(--approved)}.act-REJECT{color:var(--rejected)}
+.act-QUERY,.act-NUDGE{color:var(--query)}.act-SAP_PR,.act-SAP_PO,.act-SAP_POST{color:var(--accent)}
+/* dashboard */
+.filterbar .frow{display:flex;gap:18px;align-items:flex-end;flex-wrap:wrap}
+.filterbar label{margin:0;font-size:13.5px;color:var(--mute);min-width:170px}
+.filterbar .lbl{display:block;font-size:13.5px;font-weight:600;color:var(--mute);margin-bottom:4px}
+.periods{display:flex;gap:6px;flex-wrap:wrap}.periods button{padding:8px 13px;font-size:14px;background:#eef1f8;border-color:transparent;color:#3d4c69}
+.periods button.on{background:var(--accent);color:#fff}.periods button:hover:not(.on){background:#e2e8f5}
+.fbtns{display:flex;gap:8px;margin-left:auto}
+.now{display:flex;gap:14px;align-items:center;background:var(--accent-bg);border-color:#c5d8f7}
+.now b{font:800 28px var(--head);color:var(--accent)}
+.sechead{font:700 17px var(--head);margin:22px 0 12px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:6px}
+.tile{position:relative;overflow:hidden;border:0;border-radius:13px;padding:16px 18px 14px;text-align:left;color:#fff;display:flex;flex-direction:column;gap:2px;min-height:106px;font-weight:500;box-shadow:var(--shadow);transition:transform .15s,box-shadow .15s}
+.tile:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(16,32,64,.18)}
+.tile b{font:800 36px/1.05 var(--head);font-variant-numeric:tabular-nums}.tile span{font-size:15.5px}
+.tile svg{position:absolute;right:-8px;bottom:-12px;width:92px;height:92px;opacity:.2;stroke-width:1.5}
+.tile.t-blue{background:linear-gradient(135deg,#34a3f5,#1b75d4)}.tile.t-amber{background:linear-gradient(135deg,#ffc83d,#f59e0b);color:#3a2600}
+.tile.t-red{background:linear-gradient(135deg,#ef4b4b,#c42323)}.tile.t-orange{background:linear-gradient(135deg,#ff9a3d,#e8710a)}
+.tile.t-green{background:linear-gradient(135deg,#5fbf4f,#2f8f3a)}.tile.t-teal{background:linear-gradient(135deg,#19b3b5,#0b7f82)}
+.tile.t-navy{background:linear-gradient(135deg,#2c5fd6,#14388f)}.tile.t-slate{background:linear-gradient(135deg,#7a8aa6,#55637d)}
+.tile.t-red.hot{animation:pulse 2.4s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 6px rgba(228,60,60,.18)}}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}.grid2 .card{margin:0}
+.chartcard h3{text-align:center}
+.donutrow{display:flex;align-items:center;gap:22px;justify-content:center;flex-wrap:wrap}
+.donut{width:190px;height:190px;flex:none}.donut .dbig{font:800 30px var(--head);fill:var(--ink)}.donut .dsmall{font-size:12.5px;fill:var(--mute)}
+.lg{border-collapse:collapse;font-size:14.5px;width:auto;min-width:210px}.lg td{padding:4px 8px;border:0}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:8px;vertical-align:-1px}
+svg.hb{display:block;width:100%;max-width:760px;height:auto;margin:0 auto}svg.hb text{font:13px var(--sans);fill:var(--mute)}svg.hb .lab{fill:var(--ink);font-weight:600}svg.hb .tot{fill:var(--ink);font-weight:700}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13.5px;color:var(--mute);margin-top:8px;justify-content:center}
+.mrow{display:grid;grid-template-columns:150px 1fr 150px;gap:12px;align-items:center;margin:11px 0;font-size:15px}
+.bar{display:flex;height:14px;border-radius:7px;background:#e9edf6;overflow:hidden}
+.fill{display:block;height:100%;background:linear-gradient(90deg,#34a3f5,#1456c8);border-radius:7px}
+/* sign in */
+.auth{display:grid;grid-template-columns:1.05fr 1fr;min-height:100vh}
+.hero{background:linear-gradient(160deg,#0a1a46 0%,#0c2f80 60%,#1456c8 140%);color:#fff;padding:48px 56px;display:flex;flex-direction:column;justify-content:center;gap:22px}
+.hero .brand{padding:0}.hero h1{font:800 44px/1.08 var(--head);margin:0;letter-spacing:-.02em;max-width:13ch}
+.hero p{color:#c3d2f3;font-size:18px;max-width:46ch;margin:0}
+.flow{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.flow li{background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.24);border-radius:999px;padding:5px 15px;font:700 14px var(--head)}
+.flow li:not(:last-child)::after{content:"\2192";margin-left:12px;opacity:.7}
+.panel{display:flex;flex-direction:column;justify-content:center;align-items:center;padding:40px 6vw;gap:0}
+.panel .card{max-width:440px;width:100%}
+@media(max-width:900px){.shell{grid-template-columns:1fr}aside{position:static;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;padding:10px 12px}
+.brand{padding:0 8px 0 0}.brand small{display:none}aside nav{flex-direction:row;flex-wrap:wrap}.usercard{margin:0 0 0 auto;border:0;padding:0}.usercard div{display:none}
+main{padding:18px 14px 50px}dl{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}.mrow{grid-template-columns:110px 1fr 110px}
+.auth{grid-template-columns:1fr}.hero{padding:30px 24px}.hero h1{font-size:32px}.fbtns{margin-left:0}}
+@media(prefers-reduced-motion:reduce){#toast,.tile{transition:none}.tile.t-red.hot{animation:none}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast" role="status"></div>
+<script>
+const $ = s => document.querySelector(s);
+const E = (form, n) => form.elements.namedItem(n);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const store = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} };
+const S = { token: (() => { try { return localStorage.getItem('p2p_token'); } catch { return null; } })(), user: null, tpl: null };
+const LABEL = { DRAFT:'Draft', PENDING:'In approval', QUERY:'Query raised', REJECTED:'Rejected', APPROVED:'Approved', PAID:'Paid' };
+const TYPES = { ION:['ION','Internal Office Note','Budget and vendor outreach'], IOM:['IOM','Inter-Office Memo','Compare quotes, justify L1'], PRPO:['PRPO','SAP PR and PO request','Purchase team approves, then SAP issues the PO'],
+  TRN:['TRN','Tender Recommendation Note','Standalone recommendation record'], INVOICE:['INVOICE','Invoice','Raised by the vendor against a PO'] };
+const days = n => n < 1 ? 'under a day' : `${Math.floor(n)} day${Math.floor(n) === 1 ? '' : 's'}`;
+const age = d => d.age_days == null ? '' : `<br><small class="${d.stuck ? 'stuck' : 'mute'}">${d.stuck ? 'Stuck ' : 'Waiting '}${days(d.age_days)}</small>`;
+const money = n => 'INR ' + Number(n || 0).toLocaleString('en-IN');
+const whenDay = iso => iso ? new Date(iso + 'Z').toLocaleString('en-IN', { weekday:'long', day:'numeric', month:'short', year:'numeric', hour:'numeric', minute:'2-digit', second:'2-digit' }) : '';
+const when = iso => iso ? new Date(iso + 'Z').toLocaleString('en-IN', { dateStyle:'medium', timeStyle:'short' }) : '';
+const chip = s => `<span class="chip ${s}">${LABEL[s] || s}</span>`;
+
+function toast(msg, bad) {
+  const t = $('#toast'); t.textContent = msg; t.className = 'show' + (bad ? ' bad' : '');
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.className = '', 3200);
+}
+async function api(path, opts = {}) {
+  const isForm = opts.body instanceof FormData;
+  const headers = { ...(opts.body && !isForm ? { 'Content-Type':'application/json' } : {}), ...(S.token ? { Authorization:'Bearer ' + S.token } : {}) };
+  const r = await fetch('/api' + path, { ...opts, headers, body: opts.body && !isForm ? JSON.stringify(opts.body) : opts.body });
+  const json = (r.headers.get('content-type') || '').includes('json');
+  const data = json ? await r.json() : await r.blob();
+  if (r.status === 401 && path !== '/login') { store('p2p_token', null); S.token = null; S.user = null; setTimeout(route, 0); throw new Error('Please log in again'); }
+  if (!r.ok) throw new Error(data.detail || 'Something went wrong');
+  return data;
+}
+function saveBlob(blob, name) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); URL.revokeObjectURL(a.href);
+}
+async function logout() { try { if (S.token) await fetch('/api/logout', { method:'POST', headers:{ Authorization:'Bearer ' + S.token } }); } catch {} store('p2p_token', null); S.token = null; S.user = null; S.tpl = null; location.hash = ''; route(); }
+
+/* ---------- shell ---------- */
+const ICON = {
+  dashboard: '<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>',
+  inbox: '<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
+  file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>',
+  plus: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>',
+  mail: '<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>',
+  users: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+  sliders: '<line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>',
+  logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>',
+  key: '<path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.78 7.78 5.5 5.5 0 0 1 7.78-7.78zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>',
+  bank: '<line x1="3" y1="21" x2="21" y2="21"/><line x1="3" y1="10" x2="21" y2="10"/><polyline points="5 6 12 3 19 6"/><line x1="4" y1="10" x2="4" y2="21"/><line x1="20" y1="10" x2="20" y2="21"/><line x1="8" y1="14" x2="8" y2="17"/><line x1="12" y1="14" x2="12" y2="17"/><line x1="16" y1="14" x2="16" y2="17"/>',
+  copy: '<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+};
+const ico = n => `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[n]}</svg>`;
+const BRAND = '<div class="brand"><span class="mark">P2P</span><div><b>Procure to Pay</b><small>Approval portal</small></div></div>';
+function shell(page) {
+  const u = S.user, link = (p, t, icon, extra = '') => `<a href="#/${p}" class="${page === p ? 'on' : ''}">${ico(icon)}<span>${t}</span>${extra}</a>`;
+  const r = u.role, staff = r !== 'vendor', canNew = r === 'creator' || r === 'vendor';
+  $('#app').innerHTML = `<div class="shell"><aside>${BRAND}<nav>${link('dashboard', 'Dashboard', 'dashboard')}${link('inbox', 'Inbox', 'inbox')}${link('docs', r === 'vendor' ? 'My POs and invoices' : 'Documents', 'file')}
+    ${canNew ? link('new', r === 'vendor' ? 'New invoice' : 'New document', 'plus') : ''}${link('mail', 'Mail', 'mail', u.unread ? `<span class="badge">${u.unread}</span>` : '')}
+    ${['approver', 'purchase'].includes(r) ? link('delegation', 'Delegation', 'users') : ''}${r === 'vendor' ? link('bank', 'My bank details', 'bank') : link('vendors', 'Vendors', 'bank')}
+    ${staff ? link('audit', 'Audit log', 'shield') + link('config', 'Chains and fields', 'sliders') : ''}${link('account', 'Account', 'key')}</nav>
+    <div class="usercard"><span class="av">${esc(u.name.trim()[0])}</span><div><b>${esc(u.name)}</b><small>${esc(u.role)}, ${esc(u.company)}</small></div>
+    <button title="Log out" aria-label="Log out" onclick="logout()">${ico('logout')}</button></div></aside><main id="main"></main></div>`;
+}
+const main = html => $('#main').innerHTML = html;
+
+async function route() {
+  if (!S.token) return vLogin();
+  try {
+    S.user = await api('/me');
+    if (!S.tpl && S.user.role !== 'vendor') S.tpl = await api('/templates');
+  } catch { return vLogin(); }
+  const [, page = 'dashboard', arg] = (location.hash.slice(1) || '/dashboard').split('/');
+  shell(page);
+  const views = { dashboard: vDashboard, inbox: vInbox, docs: vDocs, new: vNew, doc: () => vDoc(+arg), mail: vMail, audit: vAudit, config: vConfig, delegation: vDelegation, vendors: vVendors, bank: vBank, account: vAccount };
+  try { await (views[page] || vDashboard)(); } catch (e) { main(`<p class="err">${esc(e.message)}</p>`); }
+}
+window.addEventListener('hashchange', route);
+
+/* ---------- login ---------- */
+const STAFF = [['creator', 'Requester'], ['approver1', 'Approver 1'], ['approver2', 'Approver 2'], ['approver3', 'Approver 3'], ['purchase1', 'Purchase 1'], ['purchase2', 'Purchase 2'], ['accounts', 'Accounts']];
+let PUB = { demo_mode: false, users: [] };
+function vLogin() {
+  $('#app').innerHTML = `<div class="auth"><section class="hero">${BRAND}<h1>Every purchase, one clear trail.</h1>
+    <p>From the first office note to the payment advice: approvals, SAP numbers, vendor invoices and an audit log in one place.</p>
+    <ol class="flow"><li>ION</li><li>IOM</li><li>PR / PO</li><li>Vendor invoice</li><li>Paid</li></ol></section>
+    <section class="panel"><form class="card" onsubmit="return signIn(event)"><h3>Sign in</h3><label>Username<input name="u" autocomplete="username" required></label>
+    <label>Password<input name="p" type="password" autocomplete="current-password" required></label>
+    <button class="primary" type="submit" style="width:100%">Log in</button></form><div id="demo" style="max-width:440px;width:100%"></div></section></div>`;
+  fillDemo();
+}
+async function fillDemo() {
+  try { PUB = await (await fetch('/api/public')).json(); } catch { return; }
+  if (!PUB.demo_mode || !$('#demo')) return;
+  const cos = [...new Set(PUB.users.map(u => u.company).filter(Boolean))];
+  const pick = r => PUB.users.filter(u => r.includes(u.role));
+  $('#demo').innerHTML = `<div class="card"><h3>Demo accounts</h3><p class="sub" style="margin-bottom:8px">Demo mode is on, so every password is ${esc(PUB.password)}. TRPL has an approved ION and a stuck IOM. HEPL has a paid invoice and one waiting at Accounts.</p>
+    <label style="margin:0">Company staff<select id="qc">${cos.map(c => `<option ${c === 'HEPL' ? 'selected' : ''}>${c}</option>`).join('')}</select></label>
+    <div class="quick">${STAFF.map(([k, t]) => `<button onclick="quick('${k}')">${t}</button>`).join('')}</div>
+    <h3 style="margin-top:14px">Vendors</h3><div class="quick">${pick(['vendor']).map(v => `<button onclick="quickUser('${v.username}')">${esc(v.name)}</button>`).join('')}</div>
+    <h3 style="margin-top:14px">Portal-wide</h3><div class="quick"><button onclick="quickUser('admin')">Admin</button><button onclick="quickUser('auditor')">Auditor (read only)</button></div></div>`;
+}
+async function signIn(e, direct) {
+  if (e) e.preventDefault();
+  const f = e && e.target, body = direct || { username: E(f,'u').value, password: E(f,'p').value };
+  try {
+    const r = await api('/login', { method:'POST', body });
+    S.token = r.token; store('p2p_token', r.token); S.user = r.user; S.tpl = null; DASH = { ...DASH0 }; location.hash = '#/dashboard'; route();
+  } catch (x) { toast(x.message, true); }
+  return false;
+}
+const quickUser = u => signIn(null, { username: u, password: PUB.password });
+const quick = role => quickUser(`${role}.${$('#qc').value.toLowerCase()}`);
+
+/* ---------- dashboard ---------- */
+const DASH0 = { period: 'month', from: '', to: '', doc_type: '', company: '' };
+let DASH = { ...DASH0 };
+const SC = { DRAFT: '#94a3b8', PENDING: '#f5a524', QUERY: '#3b82f6', REJECTED: '#e5484d', APPROVED: '#46a758', PAID: '#0f9d9f' };
+const SHORT = { ION: 'ION', IOM: 'IOM', PRPO: 'PR / PO', TRN: 'TRN', INVOICE: 'Invoice' };
+const PERIODS = [['month', 'Current month'], ['quarter', 'Current quarter'], ['year', 'Current calendar year'], ['all', 'All time'], ['custom', 'Custom']];
+const periodStart = { month: d => new Date(d.getFullYear(), d.getMonth(), 1), quarter: d => new Date(d.getFullYear(), Math.floor(d.getMonth() / 3) * 3, 1), year: d => new Date(d.getFullYear(), 0, 1) };
+function dashRange() {
+  if (DASH.period === 'all') return {};
+  if (DASH.period === 'custom') return { from: DASH.from, to: DASH.to };
+  return { from: ymd(periodStart[DASH.period](new Date())), to: ymd(new Date()) };
+}
+function dashQuery() {
+  const p = new URLSearchParams(), r = dashRange();
+  if (r.from) p.set('since', new Date(r.from + 'T00:00:00').toISOString());
+  if (r.to) p.set('until', new Date(r.to + 'T23:59:59').toISOString());
+  if (DASH.doc_type) p.set('doc_type', DASH.doc_type);
+  if (DASH.company) p.set('company_id', DASH.company);
+  return p.toString();
+}
+function setPeriod(p) {
+  DASH.period = p;
+  if (p === 'custom' && !DASH.from) { DASH.from = ymd(periodStart.month(new Date())); DASH.to = ymd(new Date()); }
+  vDashboard();
+}
+const shortDate = iso => new Date(iso + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+
+function niceMax(m) { const p = Math.pow(10, Math.floor(Math.log10(m))), n = m / p; return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p; }
+function donut(segs, big, small) {
+  const total = segs.reduce((a, x) => a + x.value, 0), R = 62, C = 2 * Math.PI * R; let off = 0;
+  const arcs = segs.filter(x => x.value).map(x => {
+    const len = x.value / total * C;
+    const el = `<circle r="${R}" cx="90" cy="90" fill="none" stroke="${x.color}" stroke-width="26" stroke-dasharray="${len} ${C - len}" stroke-dashoffset="${-off}" transform="rotate(-90 90 90)"><title>${x.label}: ${x.value} (${(x.value / total * 100).toFixed(1)}%)</title></circle>`;
+    off += len; return el;
+  }).join('');
+  return `<svg class="donut" viewBox="0 0 180 180" role="img"><circle r="${R}" cx="90" cy="90" fill="none" stroke="#eaeef7" stroke-width="26"/>${arcs}
+    <text x="90" y="91" text-anchor="middle" class="dbig">${big}</text><text x="90" y="111" text-anchor="middle" class="dsmall">${small}</text></svg>`;
+}
+const legendTable = segs => { const t = segs.reduce((a, x) => a + x.value, 0);
+  return `<table class="lg">${segs.map(x => `<tr><td><i class="sw" style="background:${x.color}"></i>${x.label}</td><td class="num">${x.value}</td><td class="num">${t ? (x.value / t * 100).toFixed(1) : '0.0'}%</td></tr>`).join('')}</table>`; };
+function hbars(rows) {
+  const keys = Object.keys(LABEL), tot = r => keys.reduce((a, s) => a + (r.st[s] || 0), 0);
+  const nm = niceMax(Math.max(1, ...rows.map(tot))), step = nm <= 5 ? 1 : nm / 5, W = 640, L = 96, RR = 44, pw = W - L - RR, bh = 26, gap = 14, H = rows.length * (bh + gap) + 44;
+  let grid = '';
+  for (let v = 0; v <= nm + 0.001; v += step) { const x = L + v / nm * pw; grid += `<line x1="${x}" x2="${x}" y1="4" y2="${H - 30}" stroke="#e9edf5"/><text x="${x}" y="${H - 12}" text-anchor="middle">${Math.round(v * 10) / 10}</text>`; }
+  const bars = rows.map((r, i) => {
+    const y = 10 + i * (bh + gap); let x = L;
+    const segs = keys.filter(s => r.st[s]).map(s => { const w = r.st[s] / nm * pw, el = `<rect x="${x}" y="${y}" width="${w}" height="${bh}" fill="${SC[s]}"><title>${r.full || r.label}, ${LABEL[s]}: ${r.st[s]}</title></rect>`; x += w; return el; }).join('');
+    return `<text class="lab" x="${L - 10}" y="${y + bh / 2 + 4}" text-anchor="end">${esc(r.label)}</text>${segs}<text class="tot" x="${x + 8}" y="${y + bh / 2 + 4}">${tot(r)}</text>`;
+  }).join('');
+  return `<svg class="hb" viewBox="0 0 ${W} ${H}" role="img">${grid}<line x1="${L}" x2="${L}" y1="4" y2="${H - 30}" stroke="#c9d2e4"/>${bars}</svg>
+    <div class="legend">${keys.map(s => `<span><i class="sw" style="background:${SC[s]}"></i>${LABEL[s]}</span>`).join('')}</div>`;
+}
+
+async function vDashboard() {
+  const d = await api('/dashboard?' + dashQuery());
+  const k = d.kpi, t = d.my_tasks, mine = t.to_approve + t.returned + t.to_raise_sap + t.to_pay, m = d.money, top = Math.max(m.committed, m.invoiced, m.paid, 1);
+  const admin = ['admin', 'auditor'].includes(S.user.role), r = dashRange();
+  const periodText = DASH.period === 'all' ? 'All time' : r.from && r.to ? `${shortDate(r.from)} to ${shortDate(r.to)}` : 'Pick a start and end date';
+  const tile = (label, n, cls, f) => `<button class="tile t-${cls}${cls === 'red' && n ? ' hot' : ''}" onclick='goDocs(${JSON.stringify(f)})'><b>${n}</b><span>${label}</span>${ico('copy')}</button>`;
+  const statusSegs = Object.keys(LABEL).map(s => ({ label: LABEL[s], value: Object.values(d.pipeline).reduce((a, st) => a + (st[s] || 0), 0), color: SC[s] }));
+  const healthSegs = [{ label: 'On track', value: k.on_track, color: '#46a758' }, { label: 'Stuck', value: k.stuck, color: '#e5484d' }];
+  const typeRows = Object.entries(d.pipeline).map(([ty, st]) => ({ label: SHORT[ty], full: TYPES[ty][1], st }));
+  main(`<h2>Dashboard</h2><p class="sub">${esc(d.scope)}, ${periodText}. Documents are counted by the day they were created.</p>
+    <div class="card filterbar"><div class="frow">
+      ${admin ? `<label>Company<select onchange="DASH.company=this.value;vDashboard()"><option value="">All companies</option>${d.company_options.map(o => `<option value="${o.id}" ${String(o.id) === String(DASH.company) ? 'selected' : ''}>${o.code}</option>`).join('')}</select></label>` : ''}
+      <label>Document type<select onchange="DASH.doc_type=this.value;vDashboard()"><option value="">All types</option>${Object.keys(TYPES).map(x => `<option value="${x}" ${x === DASH.doc_type ? 'selected' : ''}>${TYPES[x][1]}</option>`).join('')}</select></label>
+      <div><span class="lbl">Period</span><div class="periods">${PERIODS.map(([v, l]) => `<button class="${v === DASH.period ? 'on' : ''}" onclick="setPeriod('${v}')">${l}</button>`).join('')}</div></div>
+      ${DASH.period === 'custom' ? `<label>From<input type="date" value="${DASH.from}" oninput="DASH.from=this.value"></label><label>To<input type="date" value="${DASH.to}" oninput="DASH.to=this.value"></label>` : ''}
+      <div class="fbtns"><button class="primary" onclick="vDashboard()">Search</button><button class="reset" onclick="DASH={...DASH0};vDashboard()">Reset</button></div></div></div>
+    <div class="card now">${mine ? `<b>${mine}</b><span>item${mine === 1 ? '' : 's'} need${mine === 1 ? 's' : ''} you right now.</span><a class="grow" href="#/inbox">Open inbox</a>` : '<span>You are all caught up. Nothing is waiting on you.</span>'}</div>
+    <div class="sechead">Documents Count</div>
+    <div class="tiles">${tile('Total documents', k.total, 'blue', {})}${tile('In approval', k.in_approval, 'amber', { status: 'PENDING', statusLabel: 'In approval' })}
+      ${tile('Stuck', k.stuck, 'red', { stuck: true })}${tile('Returned', k.returned, 'orange', { status: 'QUERY,REJECTED', statusLabel: 'Query or rejected' })}
+      ${tile('Approved', k.approved, 'green', { status: 'APPROVED', statusLabel: 'Approved' })}${tile('Paid', k.paid, 'teal', { status: 'PAID', statusLabel: 'Paid' })}
+      ${tile('Invoices ready to pay', k.ready_to_pay, 'navy', { doc_type: 'INVOICE', status: 'APPROVED', statusLabel: 'Approved' })}${tile('Drafts', k.draft, 'slate', { status: 'DRAFT', statusLabel: 'Draft' })}</div>
+    <div class="grid2" style="margin-top:16px"><div class="card chartcard"><h3>Approval health</h3><div class="donutrow">${donut(healthSegs, k.open ? Math.round(k.on_track / k.open * 100) + '%' : '0', k.open ? 'on track' : 'open items')}${legendTable(healthSegs)}</div>
+        <p class="sub" style="margin:10px 0 0;text-align:center">Open items that are not stuck, out of everything still moving.</p></div>
+      <div class="card chartcard"><h3>Documents by status</h3><div class="donutrow">${donut(statusSegs, k.total, 'documents')}${legendTable(statusSegs)}</div></div></div>
+    <div class="card chartcard"><h3>Document type wise</h3>${hbars(typeRows)}</div>
+    ${d.companies.length ? `<div class="card chartcard"><h3>Company wise</h3>${hbars(d.companies.map(c => ({ label: c.company, st: c.statuses })))}</div>` : ''}
+    <div class="grid2"><div class="card"><h3>Money</h3>${[['Committed (approved POs)', m.committed], ['Invoiced', m.invoiced], ['Paid', m.paid]].map(([l, v]) =>
+        `<div class="mrow"><span>${l}</span><div class="bar"><i class="fill" style="width:${Math.max(v / top * 100, v ? 2 : 0)}%"></i></div><b class="num">${money(v)}</b></div>`).join('')}
+        <p class="sub" style="margin:10px 0 0">Invoiced counts every invoice from submission onwards, so it can never exceed the PO.</p></div>
+      ${S.user.role === 'vendor' ? '<div></div>' : `<div class="card"><h3>Where approvals are waiting</h3>${d.waiting.length ? `<table><thead><tr><th>Approver</th><th class="num">Items</th><th class="num">Stuck</th><th>Oldest</th></tr></thead><tbody>${d.waiting.map(w =>
+        `<tr><td>${esc(w.approver)}</td><td class="num">${w.count}</td><td class="num ${w.stuck ? 'stuck' : ''}">${w.stuck}</td><td class="${w.stuck ? 'stuck' : ''}">${days(w.oldest)}</td></tr>`).join('')}</tbody></table>` : '<p class="sub" style="margin:0">Nothing is waiting on an approver.</p>'}</div>`}</div>
+    <div class="grid2" style="margin-top:16px"><div class="card"><h3>Average time to approve</h3><table><tbody>${Object.entries(d.avg_days).map(([type, v]) =>
+        `<tr><td>${TYPES[type][1]}</td><td class="num">${v == null ? '<span class="mute">no data yet</span>' : v + ' days'}</td></tr>`).join('')}</tbody></table>
+        <p class="sub" style="margin:10px 0 0">From first submission to the last approval, queries included.</p></div>
+      ${d.companies.length ? `<div class="card"><h3>Companies</h3><table><thead><tr><th>Company</th><th class="num">Open</th><th class="num">Stuck</th><th class="num">Paid</th></tr></thead><tbody>${d.companies.map(c =>
+        `<tr class="link" onclick="DASH.company=${c.id};vDashboard()"><td>${c.company}</td><td class="num">${c.open}</td><td class="num ${c.stuck ? 'stuck' : ''}">${c.stuck}</td><td class="num">${money(c.paid)}</td></tr>`).join('')}</tbody></table></div>` : '<div></div>'}</div>
+    ${S.user.role === 'vendor' ? '' : `<div class="card" style="margin-top:16px"><div class="row"><h3 class="grow" style="margin:0">Recent activity</h3><a href="#/audit">Full audit log</a></div><table><tbody>${d.recent.map(x =>
+      `<tr><td>${when(x.at)}</td><td>${esc(x.user)}</td><td><span class="act act-${x.action}">${x.action}</span></td><td>${x.document_id ? `<a href="#/doc/${x.document_id}">#${x.document_id}</a> ` : ''}${esc(x.detail)}</td></tr>`).join('')}</tbody></table></div>`}`);
+}
+
+/* ---------- lists ---------- */
+const rows = list => list.length ? `<table><thead><tr><th>Document</th><th>Company</th><th class="num">Amount</th><th>Status</th><th>Waiting on</th></tr></thead><tbody>${list.map(d =>
+  `<tr class="link" onclick="location.hash='#/doc/${d.id}'"><td><span class="mono">${d.ref}</span><br>${esc(d.title)}${d.vendor && S.user.role !== 'vendor' ? `<br><small class="mute">${esc(d.vendor)}</small>` : ''}</td><td>${d.company}</td>
+  <td class="num">${money(d.amount)}</td><td>${chip(d.status)}</td><td>${esc(d.waiting_on || '')}${age(d)}</td></tr>`).join('')}</tbody></table>` : '';
+
+async function vInbox() {
+  const i = await api('/inbox');
+  const sec = [['to_approve', 'Waiting for your approval'], ['returned', 'Returned to you, fix and resubmit'],
+    ['to_raise_sap', 'Approved IOMs ready for a PR and PO request'], ['to_pay', 'Approved invoices to post and pay'], ['stuck', 'Stuck, waiting too long']]
+    .filter(([k]) => i[k].length).map(([k, t]) => `<div class="card"><h3>${t}</h3>${rows(i[k])}</div>`).join('');
+  main(`<h2>Inbox</h2><p class="sub">What needs you right now.</p>${sec || '<div class="empty">Nothing is waiting on you.</div>'}`);
+}
+let docFilter = {};
+const goDocs = f => { docFilter = f; location.hash = '#/docs'; };
+async function vDocs() {
+  const pre = docFilter; docFilter = {};
+  main(`<h2>Documents</h2><p class="sub">${S.user.role === 'vendor' ? 'Purchase orders issued to you and your invoices.' : `Everything in ${esc(S.user.company)}.`}</p>
+    <div class="filters"><select id="ft"><option value="">All types</option>${Object.keys(TYPES).map(t => `<option>${t}</option>`).join('')}</select>
+    <select id="fs"><option value="">All statuses</option>${Object.keys(LABEL).map(s => `<option value="${s}">${LABEL[s]}</option>`).join('')}</select>
+    <input id="fq" placeholder="Search title or number"><label style="margin:0;display:flex;align-items:center;gap:6px;font-weight:400"><input id="fk" type="checkbox" style="width:auto;margin:0">Stuck only</label></div><div class="card" id="dl"></div>`);
+  if (pre.doc_type) $('#ft').value = pre.doc_type;
+  if (pre.status) { const o = $('#fs'); if (!o.querySelector(`option[value="${pre.status}"]`)) o.add(new Option(pre.statusLabel || pre.status, pre.status)); o.value = pre.status; }
+  if (pre.stuck) $('#fk').checked = true;
+  const load = async () => {
+    const q = new URLSearchParams({ doc_type: $('#ft').value, status: $('#fs').value, q: $('#fq').value, stuck: $('#fk').checked ? 'true' : '' });
+    [...q].forEach(([k, v]) => !v && q.delete(k));
+    const list = await api('/documents?' + q); $('#dl').innerHTML = rows(list) || '<div class="empty">No documents match.</div>';
+  };
+  ['ft', 'fs', 'fk'].forEach(id => $('#' + id).onchange = load); $('#fq').oninput = load; load();
+}
+
+/* ---------- create ---------- */
+let newType = 'ION', preParent = null, invPo = null;
+const fieldsHtml = (fields, v = {}) => fields.map(f => {
+  const req = f.optional ? ' <span class="mute">(optional)</span>' : '', val = v[f.key];
+  if (f.type === 'textarea') return `<label>${esc(f.label)}${req}<textarea name="${f.key}">${esc(val)}</textarea></label>`;
+  if (f.type === 'select') return `<label>${esc(f.label)}${req}<select name="${f.key}" onchange="taxPreview()"><option value="">Choose</option>${f.options.map(o => `<option ${String(o) === String(val) ? 'selected' : ''}>${o}</option>`).join('')}</select></label>`;
+  return `<label>${esc(f.label)}${req}<input name="${f.key}" type="${f.type}" ${f.type === 'number' ? 'step="any"' : ''} value="${esc(val)}" ${f.key === 'percent_payable' ? 'oninput="taxPreview()"' : ''}></label>`;
+}).join('');
+function readFields(form, fields) {
+  return Object.fromEntries(fields.map(f => {
+    const v = E(form, f.key).value;
+    return [f.key, f.type === 'number' || f.type === 'select' ? (v === '' ? '' : Number(v)) : v];
+  }));
+}
+function taxPreview() {
+  const box = $('#taxbox'), f = box && box.closest('form'); if (!f) return;
+  const amt = Number(E(f,'amount').value) || 0, rate = Number(E(f,'gst_rate').value) || 0, pct = Number(E(f,'percent_payable').value) || 0;
+  const gst = Math.round(amt * rate) / 100, total = amt + gst;
+  box.innerHTML = `Taxable ${money(amt)} + GST ${rate}% ${money(gst)} = <b>${money(total)}</b><br><small>${pct || 0}% payable against this invoice: ${money(total * pct / 100)}</small>`;
+}
+async function vNew() {
+  if (S.user.role === 'vendor') return vNewInvoice();
+  if (newType === 'INVOICE') newType = 'ION';
+  const need = { IOM: ['ION', 'Linked approved ION'], PRPO: ['IOM', 'Linked approved IOM'], TRN: ['IOM', 'Linked approved IOM (optional)'] }[newType];
+  let parents = [], vendors = [];
+  if (need) parents = await api(`/documents?doc_type=${need[0]}&status=APPROVED`);
+  if (newType === 'PRPO') vendors = await api('/vendors');
+  const defAmt = newType === 'PRPO' && parents.length ? (parents.find(p => p.id === preParent) || parents[0]).amount : '';
+  main(`<h2>New document</h2><p class="sub">Saved as a draft first. Approvers are fixed when you submit. Invoices are raised by vendors, not here.</p>
+    <div class="pick">${Object.values(TYPES).filter(t => t[0] !== 'INVOICE').map(([k, n, s]) => `<button class="${k === newType ? 'on' : ''}" onclick="newType='${k}';preParent=null;vNew()">${n}<small>${s}</small></button>`).join('')}</div>
+    <form class="card" onsubmit="return saveNew(event)">
+    ${need ? `<label>${need[1]}<select name="parent" onchange="if(newType==='PRPO')document.getElementById('amt').value=this.selectedOptions[0].dataset.amt">${newType === 'TRN' ? '<option value="">None</option>' : ''}${parents.map(p => `<option value="${p.id}" data-amt="${p.amount}" ${p.id === preParent ? 'selected' : ''}>${p.ref}: ${esc(p.title)}</option>`).join('')}</select></label>
+      ${!parents.length && newType !== 'TRN' ? `<p class="err">No ${need[0]} is ready to link yet.</p>` : ''}` : ''}
+    ${newType === 'PRPO' ? `<label>Vendor this PO is addressed to<select name="vendor">${vendors.map(v => `<option value="${v.id}">${esc(v.name)}</option>`).join('')}</select></label>` : ''}
+    <label>Title<input name="title" required></label>
+    <label>${S.tpl.amount_label[newType]}<input name="amount" id="amt" type="number" step="any" min="0" value="${defAmt}" required></label>
+    ${fieldsHtml(S.tpl.fields[newType])}<button class="primary" type="submit">Save draft</button></form>`);
+}
+async function saveNew(e) {
+  e.preventDefault(); const f = e.target;
+  try {
+    const d = await api('/documents', { method:'POST', body: { doc_type: newType, title: E(f,'title').value, amount: Number(E(f,'amount').value),
+      parent_id: E(f,'parent') && E(f,'parent').value ? Number(E(f,'parent').value) : null, vendor_id: E(f,'vendor') ? Number(E(f,'vendor').value) : null,
+      data: readFields(f, S.tpl.fields[newType]) } });
+    toast('Draft saved'); preParent = null; location.hash = '#/doc/' + d.id;
+  } catch (x) { toast(x.message, true); }
+  return false;
+}
+async function vNewInvoice(poId) {
+  const pos = await api('/documents?doc_type=PRPO');
+  if (!pos.length) return main(`<h2>New invoice</h2><div class="empty">No purchase order has been issued to you yet. When a company's PO is approved it appears here and you can bill against it.</div>`);
+  const po = pos.find(p => p.id === (poId || invPo)) || pos[0]; invPo = po.id;
+  const [t, det] = await Promise.all([api('/templates?company_id=' + po.company_id), api('/documents/' + po.id)]);
+  S.invFields = t.fields.INVOICE;
+  const poNo = (det.sap.find(s => s.po_number) || {}).po_number;
+  main(`<h2>New invoice</h2><p class="sub">Bill against an approved PO. Enter the value before GST, GST is added from the rate you choose. Saved as a draft first, then submit it.</p>
+    <form class="card" onsubmit="return saveInvoice(event)">
+    <label>Purchase order<select name="po" onchange="vNewInvoice(+this.value)">${pos.map(p => `<option value="${p.id}" ${p.id === po.id ? 'selected' : ''}>${p.company}: ${esc(p.title)}</option>`).join('')}</select></label>
+    <div class="sapbox">PO <span class="mono">${poNo || ''}</span> from ${po.company}, value before GST <b>${money(po.amount)}</b><br><small>${esc(det.data.items || '')}</small></div>
+    <label>Title<input name="title" required value="Invoice for ${esc(poNo || 'PO')}"></label>
+    <label>${t.amount_label.INVOICE}<input name="amount" id="amt" type="number" step="any" min="0" required oninput="taxPreview()"></label>
+    ${fieldsHtml(S.invFields, { percent_payable: 100 })}
+    <div class="sapbox" id="taxbox">Enter the taxable value and GST rate to see the total.</div>
+    <button class="primary" type="submit">Save draft</button></form>`);
+  taxPreview();
+}
+async function saveInvoice(e) {
+  e.preventDefault(); const f = e.target;
+  try {
+    const d = await api('/documents', { method:'POST', body: { doc_type: 'INVOICE', title: E(f,'title').value, amount: Number(E(f,'amount').value), parent_id: Number(E(f,'po').value), data: readFields(f, S.invFields) } });
+    toast('Draft saved. Attach the invoice copy, then submit.'); location.hash = '#/doc/' + d.id;
+  } catch (x) { toast(x.message, true); }
+  return false;
+}
+
+/* ---------- document page ---------- */
+const DECISION = { pending:'Waiting', approved:'Approved', rejected:'Rejected', query:'Query raised' };
+const MSG = { submit:'Submitted for approval', resubmit:'Resubmitted to the same approver', 'sap/post':'Posted to SAP', pay:'Payment released and advice emailed', action:'Decision recorded', nudge:'Reminder sent to the approver', comment:'Comment added', attachment:'File attached' };
+
+function vDoc(id, d) {
+  return (d ? Promise.resolve(d) : api('/documents/' + id)).then(d => {
+    const A = d.actions, has = a => A.includes(a), isVendor = S.user.role === 'vendor', ro = S.user.readonly;
+    const kids = id => d.family.filter(n => n.parent_id === id);
+    const walk = n => `<li>${n.id === d.id ? '<span class="node here">' : `<a class="node" href="#/doc/${n.id}">`}<i class="dot ${n.status}"></i><span class="mono">${n.ref}</span>${esc(n.title)}${n.id === d.id ? '</span>' : '</a>'}
+      ${kids(n.id).length ? `<ul>${kids(n.id).map(walk).join('')}</ul>` : ''}</li>`;
+    const tree = `<ul class="tree">${walk(d.family[0])}</ul>`;
+    const files = (d.data.attachments || []).map(n => `<a href="#" onclick="dl(${d.id},'${esc(n)}');return false">${esc(n.split('_').slice(2).join('_'))}</a>`).join(', ');
+    const ci = d.chain_info, note = ci.skipped.length ? `<p class="sub" style="margin:10px 0 0">${ci.skipped.map(x => `Level ${x.level} applies from ${money(x.from)}`).join('. ')}. At ${money(d.amount)} this needs ${ci.levels.length} level${ci.levels.length === 1 ? '' : 's'}.</p>` : '';
+    const sap = d.sap.map(r => r.kind === 'PR_PO'
+      ? `<div class="sapbox">PR <span class="mono">${r.pr_number}</span>, PO ${r.po_number ? `<span class="mono">${r.po_number}</span>` : '<i>issued after approval</i>'}${r.created_by_name ? `<br><small>Raised by ${esc(r.created_by_name)}${r.approved_by_name ? `, approved by ${esc(r.approved_by_name)}` : ''}, ${whenDay(r.at)}</small>` : ''}</div>`
+      : `<div class="sapbox">SAP document <span class="mono">${r.sap_doc_no}</span><br><small>Parked by ${esc(r.park_user)}, posted by ${esc(r.post_user)}, ${whenDay(r.at)}</small></div>`).join('');
+    const pay = d.payment ? `<div class="sapbox">Paid <b>${money(d.payment.amount)}</b>, ref <span class="mono">${d.payment.reference}</span><br><small>Released by ${esc(d.payment.paid_by)}, ${when(d.payment.paid_at)}. Payment advice emailed to the vendor.</small></div>` : '';
+    const ps = d.po_summary;
+    const match = ps ? `<div class="card"><h3>PO, work received and invoice</h3><dl>
+        <dt>PO value (before GST)</dt><dd>${money(ps.po_value)}</dd>
+        <dt>Invoiced to date, with this one</dt><dd>${money(ps.invoiced_others + d.amount)} (${ps.after_pct}% of the PO). Other invoices: ${money(ps.invoiced_others)}, left on the PO: ${money(ps.remaining)}</dd>
+        <dt>Received to date</dt><dd>${d.data.received_value != null ? money(d.data.received_value) + ', confirmed by the requester' : ps.received_before ? money(ps.received_before) + ' confirmed on an earlier invoice' : 'Not confirmed yet'}</dd>
+        <dt>Match rule</dt><dd>Invoiced to date may be at most received to date plus ${ps.tolerance_pct}%.</dd></dl>
+      ${d.awaiting_requester ? `<label style="margin-top:12px">Value received to date, before GST (INR)<input id="rv" type="number" step="any" min="0" value="${ps.received_before || ''}"></label>
+        <label>Service entry sheet or goods receipt number<input id="ses" maxlength="40" value="${esc(d.data.ses_gr_no || '')}" placeholder="e.g. SES-4471 or GR-5001"></label>
+        <p class="sub" style="margin:0">Confirm what has actually been delivered or done in total against this PO, and give the document that proves it. Accounts receives it for payment. If it does not cover this invoice, raise a query to the vendor instead of approving.</p>` : ''}</div>` : '';
+    const vend = d.vendor_info ? `<dt>Vendor</dt><dd>${esc(d.vendor_info.name)}, GSTIN <span class="mono">${d.vendor_info.gstin}</span>${d.vendor_info.einvoice_required ? ', under e-invoicing' : ''}</dd>` : '';
+    const tax = d.tax ? `<dt>GST at ${d.tax.rate}%</dt><dd>${money(d.tax.gst)}</dd><dt>Invoice total</dt><dd>${money(d.tax.total)}. ${d.tax.percent_payable}% payable against it: <b>${money(d.tax.payable)}</b></dd>` : '';
+    main(`<div class="row"><h2 class="grow">${esc(d.title)}</h2>${chip(d.status)}</div>
+      <p class="sub"><span class="mono">${d.ref}</span>, ${d.company}, created by ${esc(d.created_by)}, updated ${when(d.updated_at)}${d.stuck && !isVendor ? ` <span class="stuck">Waiting ${days(d.age_days)} on ${esc(d.waiting_on)}</span>` : ''}</p>
+      <div class="row" style="margin-bottom:14px"><button onclick="pdf(${d.id},0,'${d.ref}')">Download PDF</button>
+        ${d.family.length > 1 ? `<button onclick="pdf(${d.id},1,'${d.ref}')">Download full record (PDF)</button>` : ''}</div>
+      <div class="card"><h3>Document chain</h3>${tree}</div>
+      <div class="card"><h3>${isVendor ? 'Review status' : 'Approvals'}</h3>${d.steps.length ? `<ol class="steps">${d.steps.map(s => `<li class="step ${s.decision} ${s.level === d.current_level && d.status === 'PENDING' ? 'now' : ''}">
+        <small class="mute">Level ${s.level}</small><b>${esc(s.label)}</b>${s.approver !== s.label ? `<span>${esc(s.approver)}</span>` : ''}<em>${DECISION[s.decision]}${s.acted_at ? ', ' + when(s.acted_at) : ''}</em>${s.delegate ? `<em>by ${esc(s.delegate)}, as delegate</em>` : ''}${s.comment ? `<q>${esc(s.comment)}</q>` : ''}</li>`).join('')}</ol>`
+        : `<p class="sub" style="margin:0">${d.doc_type === 'PRPO' && isVendor ? 'This purchase order is approved.' : 'The approval chain starts when this is submitted.'}</p>`}${note}</div>
+      <div class="card" id="body"><h3>Details</h3><dl><dt>${d.amount_label}</dt><dd>${money(d.amount)}</dd>
+        ${vend}${tax}
+        ${d.data.po_number ? `<dt>PO number</dt><dd class="mono">${d.data.po_number}</dd>` : ''}
+        ${d.data.ses_gr_no ? `<dt>Service entry / goods receipt</dt><dd class="mono">${esc(d.data.ses_gr_no)}</dd>` : ''}
+        ${d.fields.map(f => `<dt>${esc(f.label)}</dt><dd>${esc(d.data[f.key])}</dd>`).join('')}
+        ${files ? `<dt>Attachments</dt><dd>${files}</dd>` : ''}</dl></div>
+      ${match}
+      ${sap || pay ? `<div class="card"><h3>SAP and payment</h3>${sap}${pay}</div>` : ''}
+      <div class="card"><h3>Actions</h3><div class="row">
+        ${has('submit') ? `<button class="primary" onclick="step(${d.id},'submit')">Submit for approval</button>` : ''}
+        ${has('resubmit') ? `<button class="primary" onclick="step(${d.id},'resubmit')">Resubmit to same approver</button>` : ''}
+        ${has('nudge') ? `<button onclick="step(${d.id},'nudge')">Remind approver</button>` : ''}
+        ${has('edit') ? `<button onclick="editDoc(${d.id})">Edit</button>` : ''}
+        ${has('request_prpo') ? `<button class="primary" onclick="newType='PRPO';preParent=${d.id};location.hash='#/new'">Request PR and PO</button>` : ''}
+        
+        ${has('pay') ? `<button class="primary" onclick="step(${d.id},'pay')">Release payment</button>` : ''}
+        ${has('attach') ? `<label style="margin:0">Attach a file (pdf, png, jpg, xlsx, xls, csv, docx; up to 5 MB)<input type="file" accept=".pdf,.png,.jpg,.jpeg,.xlsx,.xls,.csv,.docx" onchange="attach(${d.id},this)"></label>` : ''}</div>
+        ${has('post_sap') ? `<div class="card" style="margin:14px 0 0;box-shadow:none;background:#f8faff"><h3>Record the SAP entry</h3>
+          <p class="sub" style="margin:0 0 10px">Enter who parked this invoice in SAP. You are recorded as the post user, with the date, day and time.${d.data.ses_gr_no ? ` Service entry or goods receipt on file: <b>${esc(d.data.ses_gr_no)}</b>.` : ''}</p>
+          <div class="fbar"><label>SAP park user<input id="pk" maxlength="100" placeholder="Name of the person who parked it"></label>
+          ${d.data.ses_gr_no ? '' : '<label>Service entry or goods receipt no.<input id="sg" maxlength="40"></label>'}</div>
+          <button class="primary" style="margin-top:12px" onclick="postSap(${d.id})">Record park and post details</button></div>` : ''}
+        ${d.pay_block && d.status === 'APPROVED' ? `<p class="err" style="margin:12px 0 0">Payment is blocked: ${esc(d.pay_block)}. <a href="#/vendors">Open vendors</a></p>` : ''}
+        ${d.blocked_reason ? `<p class="err" style="margin:12px 0 0">${esc(d.blocked_reason)}.</p>` : ''}
+        ${has('approve') ? `<label style="margin-top:14px">Comment (required for reject or query)<textarea id="ac"></textarea></label>
+          <div class="row"><button class="primary" onclick="decide(${d.id},'approve')">${d.awaiting_requester ? 'Confirm work and approve' : 'Approve'}</button>
+          <button class="warn" onclick="decide(${d.id},'query')">Raise query</button><button class="danger" onclick="decide(${d.id},'reject')">Reject</button></div>` : ''}
+        ${!A.length && !d.blocked_reason ? `<p class="sub" style="margin:0">${ro ? 'You have read-only access.' : 'Nothing for you to do on this document.'}</p>` : ''}</div>
+      <div class="card"><h3>Comments</h3>${d.comments.map(c => `<div class="cm"><small>${esc(c.user)}, ${when(c.at)}</small><br>${esc(c.text)}</div>`).join('') || '<p class="sub" style="margin:0 0 8px">No comments yet.</p>'}
+        ${ro ? '' : `<div class="row" style="margin-top:10px"><input id="cm" class="grow" placeholder="Add a comment" style="margin:0;width:auto"><button onclick="comment(${d.id})">Add</button></div>`}</div>
+      ${isVendor ? '' : `<details class="card"><summary>History (${d.history.length})</summary><table><tbody>${d.history.map(h =>
+        `<tr><td>${when(h.at)}</td><td>${esc(h.user)}</td><td><b>${h.action}</b></td><td>${esc(h.detail)}</td></tr>`).join('')}</tbody></table></details>`}`);
+  });
+}
+async function step(id, path, body) {
+  try { const d = await api(`/documents/${id}/${path}`, { method:'POST', body }); toast(MSG[path] || 'Done'); await vDoc(id, d); S.user = await api('/me'); }
+  catch (e) { toast(e.message, true); }
+}
+const postSap = id => step(id, 'sap/post', { park_user: $('#pk').value, ses_gr_no: $('#sg') ? $('#sg').value : '' });
+const decide = (id, decision) => step(id, 'action', { decision, comment: $('#ac').value, ses_gr_no: $('#ses') ? $('#ses').value : undefined, received_value: $('#rv') && $('#rv').value !== '' ? Number($('#rv').value) : undefined });
+const comment = id => step(id, 'comment', { text: $('#cm').value });
+async function attach(id, input) {
+  if (!input.files[0]) return; const fd = new FormData(); fd.append('file', input.files[0]);
+  try { const d = await api(`/documents/${id}/attachment`, { method:'POST', body: fd }); toast(MSG.attachment); vDoc(id, d); } catch (e) { toast(e.message, true); input.value = ''; }
+}
+async function pdf(id, full, ref) {
+  try { saveBlob(await api(`/documents/${id}/${full ? 'record.pdf' : 'pdf'}`), (full ? 'record-' : '') + ref + '.pdf'); toast(full ? 'Full record downloaded' : 'PDF downloaded'); }
+  catch (e) { toast(e.message, true); }
+}
+async function dl(id, name) { try { saveBlob(await api(`/documents/${id}/attachments/${encodeURIComponent(name)}`), name.split('_').slice(2).join('_')); } catch (e) { toast(e.message, true); } }
+async function editDoc(id) {
+  const d = await api('/documents/' + id);
+  window.EDIT_FIELDS = d.fields;
+  $('#body').innerHTML = `<h3>Edit</h3><form onsubmit="return saveEdit(event,${id})"><label>Title<input name="title" value="${esc(d.title)}" required></label>
+    <label>${d.amount_label}<input name="amount" type="number" step="any" value="${d.amount}" required oninput="taxPreview()"></label>${fieldsHtml(d.fields, d.data)}
+    ${d.doc_type === 'INVOICE' ? '<div class="sapbox" id="taxbox"></div>' : ''}
+    <div class="row"><button class="primary" type="submit">Save changes</button><button type="button" onclick="vDoc(${id})">Cancel</button></div></form>`;
+  if (d.doc_type === 'INVOICE') taxPreview();
+}
+async function saveEdit(e, id) {
+  e.preventDefault(); const f = e.target;
+  try {
+    const d = await api('/documents/' + id, { method:'PATCH', body: { title: E(f,'title').value, amount: Number(E(f,'amount').value), data: readFields(f, window.EDIT_FIELDS) } });
+    toast('Changes saved'); vDoc(id, d);
+  } catch (x) { toast(x.message, true); }
+  return false;
+}
+
+/* ---------- delegation ---------- */
+async function vDelegation() {
+  const g = await api('/delegation');
+  main(`<h2>Delegation</h2><p class="sub">Going on leave? Pick a colleague to approve in your place. They get your pending items and new ones, and the record shows who acted for you.</p>
+    <div class="card"><h3>My delegate</h3><div class="row"><select id="dg" style="margin:0;width:auto;min-width:260px"><option value="">No one, I handle my own approvals</option>${g.candidates.map(c => `<option value="${c.id}" ${c.id === g.delegate_id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select>
+    <button class="primary" onclick="setDelegate()">Save</button></div></div>
+    <div class="card"><h3>I am covering for</h3>${g.covering.length ? g.covering.map(n => `<p style="margin:0 0 4px">${esc(n)}</p>`).join('') : '<p class="sub" style="margin:0">No one right now.</p>'}</div>`);
+}
+async function setDelegate() {
+  const v = $('#dg').value;
+  try { await api('/delegation', { method:'PUT', body: { delegate_id: v ? Number(v) : null } }); toast(v ? 'Delegate saved' : 'Delegation ended'); vDelegation(); } catch (e) { toast(e.message, true); }
+}
+
+/* ---------- mail, audit, config ---------- */
+function badge() {
+  const n = S.user.unread, el = document.querySelector('aside .badge');
+  if (el) n ? el.textContent = n : el.remove();
+}
+async function vMail() {
+  const m = await api('/notifications'), unread = m.filter(n => !n.read).length;
+  main(`<div class="row"><h2 class="grow">Mail</h2>${unread ? `<button onclick="readAll()">Mark all read (${unread})</button>` : ''}</div>
+    <p class="sub">Mock email. Alerts land here instead of being sent, so you can see exactly who gets told what. New mail is highlighted.</p>
+    <div class="card">${m.map(n => `<div class="mail ${n.read ? '' : 'new'}" onclick="readOne(${n.id},this)"><small>To ${esc(n.to)}, ${when(n.at)}</small><b>${n.document_id ? `<a href="#/doc/${n.document_id}">${esc(n.subject)}</a>` : esc(n.subject)}</b><pre>${esc(n.body)}</pre></div>`).join('') || '<div class="empty">No mail yet.</div>'}</div>`);
+}
+async function readOne(id, el) {
+  if (!el.classList.contains('new')) return;
+  el.classList.remove('new'); await api(`/notifications/${id}/read`, { method:'POST' }); S.user = await api('/me'); badge();
+}
+async function readAll() { await api('/notifications/read-all', { method:'POST' }); vMail(); S.user = await api('/me'); badge(); }
+const AF0 = { since:'', until:'', action:'', role:'', username:'', doc_id:'', q:'', company_id:'', offset:0 };
+let AF = { ...AF0 }; const PAGE = 100;
+const ymd = d => d.toLocaleDateString('en-CA');
+function auditParams(more = {}) {
+  const p = new URLSearchParams(), f = AF;
+  if (f.since) p.set('since', new Date(f.since + 'T00:00:00').toISOString());
+  if (f.until) p.set('until', new Date(f.until + 'T23:59:59').toISOString());
+  ['action', 'role', 'username', 'doc_id', 'q', 'company_id'].forEach(k => f[k] && p.set(k, String(f[k]).replace(/^#/, '')));
+  Object.entries(more).forEach(([k, v]) => p.set(k, v));
+  return p;
+}
+async function vAudit() {
+  const r = await api('/audit?' + auditParams({ limit: PAGE, offset: AF.offset }));
+  const admin = ['admin', 'auditor'].includes(S.user.role), opt = (v, cur, label) => `<option value="${v}" ${String(v) === String(cur) ? 'selected' : ''}>${label || v}</option>`;
+  let companies = [];
+  if (admin) companies = (await api('/dashboard')).company_options;
+  main(`<div class="row"><h2 class="grow">Audit log</h2><button onclick="exportAudit()">Export CSV</button></div>
+    <p class="sub">Every login, edit, decision, SAP entry, payment and download. The export follows the filters you set here.</p>
+    <div class="card"><div class="fbar">
+      <label>From<input type="date" value="${AF.since}" onchange="setAF('since',this.value)"></label>
+      <label>To<input type="date" value="${AF.until}" onchange="setAF('until',this.value)"></label>
+      <label>Action<select onchange="setAF('action',this.value)"><option value="">All actions</option>${r.actions.map(a => opt(a, AF.action)).join('')}</select></label>
+      <label>Role<select onchange="setAF('role',this.value)"><option value="">All roles</option>${['creator', 'approver', 'purchase', 'accounts', 'vendor', 'admin', 'auditor'].map(x => opt(x, AF.role)).join('')}</select></label>
+      <label>User<input placeholder="Name or username" value="${esc(AF.username)}" oninput="setAF('username',this.value,1)"></label>
+      <label>Document<input placeholder="Number, e.g. 12" value="${esc(AF.doc_id)}" oninput="setAF('doc_id',this.value.replace(/\D/g,''),1)"></label>
+      <label>Detail contains<input placeholder="Search text" value="${esc(AF.q)}" oninput="setAF('q',this.value,1)"></label>
+      ${admin ? `<label>Company<select onchange="setAF('company_id',this.value)"><option value="">All companies</option>${companies.map(o => opt(o.id, AF.company_id, o.code)).join('')}</select></label>` : ''}</div>
+      <div class="presets"><span class="mute">Quick range</span><button onclick="setRange(0)">Today</button><button onclick="setRange(7)">Last 7 days</button><button onclick="setRange(30)">Last 30 days</button>
+      <button onclick="AF={...AF0};vAudit()">Clear all filters</button></div></div>
+    <div class="card"><table><thead><tr><th>Time</th>${admin ? '<th>Company</th>' : ''}<th>User</th><th>Role</th><th>Action</th><th>Document</th><th>Detail</th></tr></thead><tbody>${r.rows.map(x =>
+      `<tr><td>${when(x.at)}</td>${admin ? `<td>${x.company}</td>` : ''}<td>${esc(x.user)}</td><td>${x.role}</td><td><span class="act act-${x.action}">${x.action}</span></td>
+      <td>${x.document_id ? `<a href="#/doc/${x.document_id}">#${x.document_id}</a>` : ''}</td><td>${esc(x.detail)}</td></tr>`).join('') || `<tr><td colspan="7"><div class="empty">No entries match these filters.</div></td></tr>`}</tbody></table>
+      <div class="pager"><span>${r.total ? `Showing ${AF.offset + 1} to ${AF.offset + r.rows.length} of ${r.total}` : '0 entries'}</span>
+      <button ${AF.offset ? '' : 'disabled'} onclick="AF.offset=Math.max(0,AF.offset-${PAGE});vAudit()">Previous</button>
+      <button ${AF.offset + r.rows.length < r.total ? '' : 'disabled'} onclick="AF.offset+=${PAGE};vAudit()">Next</button></div></div>`);
+}
+let auditTimer;
+function setAF(k, v, slow) {
+  AF[k] = v; AF.offset = 0; clearTimeout(auditTimer);
+  const go = async () => { const keep = document.activeElement && document.activeElement.selectionStart != null ? [document.activeElement.placeholder, document.activeElement.selectionStart] : null;
+    await vAudit(); if (keep) { const el = [...document.querySelectorAll('.fbar input')].find(i => i.placeholder === keep[0]); if (el) { el.focus(); el.setSelectionRange(keep[1], keep[1]); } } };
+  slow ? auditTimer = setTimeout(go, 350) : go();
+}
+function setRange(n) { AF.since = ymd(new Date(Date.now() - n * 864e5)); AF.until = ymd(new Date()); AF.offset = 0; vAudit(); }
+async function exportAudit() { try { saveBlob(await api('/audit/export?' + auditParams()), 'audit_log.csv'); toast('Audit log exported with the current filters'); } catch (e) { toast(e.message, true); } }
+
+/* ---------- vendors, bank, account ---------- */
+async function vVendors() {
+  const list = await api('/vendors'), role = S.user.role, acc = role === 'accounts', adm = role === 'admin';
+  const status = v => v.bank_pending ? '<span class="chip PENDING">Change awaiting verification</span>' : v.bank_verified ? '<span class="chip APPROVED">Verified</span>' : '<span class="chip DRAFT">Not provided</span>';
+  main(`<h2>Vendors</h2><p class="sub">Suppliers who log in to bill against their POs. Payment is blocked while a vendor's bank details are unverified or a change is pending. Check the cancelled cheque or bank letter before you verify.</p>
+    <div class="card"><table><thead><tr><th>Vendor</th><th>GSTIN</th><th>E-invoice</th><th>Bank</th><th>Status</th></tr></thead><tbody>${list.map(v => `<tr><td><b>${esc(v.name)}</b><br><small class="mute">${esc(v.email)}</small></td>
+      <td class="mono">${v.gstin}</td><td>${v.einvoice_required ? 'IRN mandatory' : 'Not applicable'}</td>
+      <td>${v.bank_account ? `<span class="mono">${esc(v.bank_account)}</span><br><small class="mute">${esc(v.ifsc)}</small>` : '<span class="mute">None</span>'}</td>
+      <td>${status(v)}${v.bank_pending ? `<br><small>Proposed: <span class="mono">${esc(v.pending_account)}</span> ${esc(v.pending_ifsc)}</small>${acc ? `<br><button class="primary" onclick="verifyBank(${v.id},true)">Verify</button> <button class="danger" onclick="verifyBank(${v.id},false)">Reject</button>` : ''}` : ''}</td></tr>`).join('')}</tbody></table></div>
+    ${adm ? `<form class="card" onsubmit="return addVendor(event)"><h3>Add a vendor</h3>
+      <div class="fbar"><label>Company name<input name="name" required></label><label>GSTIN<input name="gstin" required maxlength="15" placeholder="29ABCDE1234F1Z5" style="text-transform:uppercase"></label>
+      <label>Email<input name="email" type="email" required></label><label>Login name<input name="username" required></label><label>Password (8+ characters)<input name="password" type="password" minlength="8" required></label></div>
+      <label style="display:flex;gap:8px;align-items:center;font-weight:400;margin-top:12px"><input name="einv" type="checkbox" style="width:auto;margin:0">Under e-invoicing (turnover above INR 5 crore): IRN becomes mandatory on every invoice</label>
+      <button class="primary" type="submit">Add vendor</button></form>` : ''}`);
+}
+async function addVendor(e) {
+  e.preventDefault(); const f = e.target;
+  try { await api('/vendors', { method:'POST', body: { name: E(f,'name').value, gstin: E(f,'gstin').value.toUpperCase(), email: E(f,'email').value, einvoice_required: E(f,'einv').checked, username: E(f,'username').value, password: E(f,'password').value } }); toast('Vendor added'); vVendors(); }
+  catch (x) { toast(x.message, true); }
+  return false;
+}
+async function verifyBank(id, approve) {
+  try { await api(`/vendors/${id}/bank/verify`, { method:'POST', body: { approve } }); toast(approve ? 'Bank details verified' : 'Bank change rejected'); vVendors(); } catch (e) { toast(e.message, true); }
+}
+async function vBank() {
+  S.user = await api('/me'); const v = S.user.vendor;
+  main(`<h2>My bank details</h2><p class="sub">Payments go only to verified bank details. If you change them, Accounts verifies the new details first and payments wait until then.</p>
+    <div class="card"><h3>Current</h3>${v.bank_account ? `<dl><dt>Account</dt><dd class="mono">${esc(v.bank_account)}</dd><dt>IFSC</dt><dd class="mono">${esc(v.ifsc)}</dd><dt>Status</dt><dd>${v.bank_pending ? 'A change is awaiting verification' : v.bank_verified ? 'Verified' : 'Not verified'}</dd></dl>` : '<p class="sub" style="margin:0">No bank details yet.</p>'}
+      ${v.bank_pending ? `<p class="sub" style="margin:10px 0 0">Proposed: <span class="mono">${esc(v.pending_account)}</span> ${esc(v.pending_ifsc)}. Waiting for Accounts.</p>` : ''}</div>
+    <form class="card" onsubmit="return saveBank(event)"><h3>${v.bank_account ? 'Change bank details' : 'Add bank details'}</h3>
+      <label>Account number<input name="acc" inputmode="numeric" required></label><label>IFSC<input name="ifsc" required placeholder="HDFC0001234" style="text-transform:uppercase"></label>
+      <button class="primary" type="submit">Submit for verification</button></form>`);
+}
+async function saveBank(e) {
+  e.preventDefault(); const f = e.target;
+  try { await api('/vendors/me/bank', { method:'PUT', body: { account: E(f,'acc').value, ifsc: E(f,'ifsc').value.toUpperCase() } }); toast('Sent to Accounts for verification'); vBank(); } catch (x) { toast(x.message, true); }
+  return false;
+}
+function vAccount() {
+  main(`<h2>Account</h2><p class="sub">Signed in as ${esc(S.user.name)} (${esc(S.user.role)}). Changing your password signs you out on every other device.</p>
+    <form class="card" onsubmit="return savePw(event)" style="max-width:460px"><h3>Change password</h3>
+    <label>Current password<input name="cur" type="password" autocomplete="current-password" required></label>
+    <label>New password (8+ characters)<input name="nw" type="password" minlength="8" autocomplete="new-password" required></label>
+    <button class="primary" type="submit">Change password</button></form>`);
+}
+async function savePw(e) {
+  e.preventDefault(); const f = e.target;
+  try { await api('/password', { method:'POST', body: { current: E(f,'cur').value, new: E(f,'nw').value } }); toast('Password changed'); f.reset(); } catch (x) { toast(x.message, true); }
+  return false;
+}
+
+/* ---------- approval chains and extra fields ---------- */
+const FTYPES = [['text', 'Text'], ['number', 'Number'], ['date', 'Date'], ['textarea', 'Long text']];
+async function vConfig(companyId) {
+  const glob = ['admin', 'auditor'].includes(S.user.role), admin = S.user.role === 'admin';
+  const c = await api('/config' + (companyId ? '?company_id=' + companyId : glob ? '?company_id=1' : ''));
+  const who = (t, l) => (t === 'INVOICE' ? `<option value="requester" ${l.kind === 'requester' ? 'selected' : ''}>The requester (whoever raised the PO)</option>` : '') +
+    c.people.filter(p => c.roles_for[t].includes(p.role)).map(p => `<option value="${p.id}" ${l.kind !== 'requester' && p.id === l.approver_id ? 'selected' : ''}>${esc(p.name)}</option>`).join('');
+  const chainRow = (t, l) => admin ? `<div class="cfg"><span>L${l.level}</span><input class="lbl" value="${esc(l.label)}" placeholder="Step name" style="width:200px"><select class="who">${who(t, l)}</select><span>from INR</span><input class="lim" type="number" min="0" value="${l.min_amount}" ${l.level === 1 ? 'disabled' : ''}></div>`
+    : `<div class="cfg"><span>L${l.level}</span><b>${esc(l.label)}</b><span>${esc(l.approver)}</span><span class="mute">${l.level === 1 ? 'always' : 'from ' + money(l.min_amount)}</span></div>`;
+  const fieldRow = f => `<div class="cfg xf"><input class="fl" value="${esc(f.label)}" placeholder="Field name" style="width:220px"><select class="ft" style="min-width:130px">${FTYPES.map(([v, n]) => `<option value="${v}" ${v === f.ftype ? 'selected' : ''}>${n}</option>`).join('')}</select>
+    <label style="margin:0;display:flex;gap:6px;align-items:center;font-weight:400"><input class="fr" type="checkbox" style="width:auto;margin:0" ${f.required ? 'checked' : ''}>Required</label><button type="button" onclick="this.parentElement.remove()">Remove</button></div>`;
+  main(`<h2>Approval chains and fields</h2><p class="sub">Who approves each document type, level by level, and the amount from which each level applies. Small amounts skip the higher levels. A document keeps the chain it was submitted with, unless its amount changes before resubmission. ${admin ? '' : 'Only the admin can change these.'}</p>
+    ${glob ? `<label style="max-width:260px">Company<select onchange="vConfig(this.value)">${c.companies.map(o => `<option value="${o.id}" ${o.id === c.company_id ? 'selected' : ''}>${o.code}</option>`).join('')}</select></label>` : ''}
+    ${Object.entries(c.chains).map(([t, ch]) => `<div class="card" id="ch-${t}"><h3>${TYPES[t][1]}</h3>${ch.map(l => chainRow(t, l)).join('')}
+      ${admin ? `<div class="row"><button onclick="chain('${t}',1)">Add level</button><button onclick="chain('${t}',-1)">Remove last</button><button class="primary" onclick="saveChain(${c.company_id},'${t}')">Save chain</button></div>` : ''}
+      <h4 style="margin:18px 0 8px;font:700 14px var(--head)">Extra fields for this company</h4>
+      <p class="sub" style="margin:0 0 8px">Added to the shared fields. ${t === 'INVOICE' ? 'Vendors see these on their invoice form for this company.' : ''}</p>
+      <div id="xf-${t}">${c.extra_fields[t].map(fieldRow).join('') || (admin ? '' : '<span class="mute">None</span>')}</div>
+      ${admin ? `<div class="row"><button onclick="addField('${t}')">Add field</button><button class="primary" onclick="saveFields(${c.company_id},'${t}')">Save fields</button></div>` : ''}</div>`).join('')}`);
+  window.FIELD_ROW = fieldRow;
+}
+function chain(t, dir) {
+  const rowsEl = [...$('#ch-' + t).querySelectorAll('.cfg:not(.xf)')];
+  if (dir > 0 && rowsEl.length < 6) {
+    const last = rowsEl[rowsEl.length - 1], row = last.cloneNode(true);
+    row.firstElementChild.textContent = 'L' + (rowsEl.length + 1); row.querySelector('.lim').disabled = false; last.after(row);
+  }
+  if (dir < 0 && rowsEl.length > 1) rowsEl[rowsEl.length - 1].remove();
+}
+async function saveChain(companyId, t) {
+  const levels = [...$('#ch-' + t).querySelectorAll('.cfg:not(.xf)')].map(r => {
+    const w = r.querySelector('.who').value;
+    return { label: r.querySelector('.lbl').value, kind: w === 'requester' ? 'requester' : 'fixed', approver_id: w === 'requester' ? null : Number(w), min_amount: Number(r.querySelector('.lim').value) || 0 };
+  });
+  try { await api('/config', { method:'PUT', body: { company_id: companyId, doc_type: t, levels } }); toast('Chain saved'); } catch (e) { toast(e.message, true); }
+}
+function addField(t) { $('#xf-' + t).insertAdjacentHTML('beforeend', window.FIELD_ROW({ label: '', ftype: 'text', required: true })); }
+async function saveFields(companyId, t) {
+  const fields = [...$('#xf-' + t).querySelectorAll('.xf')].map(r => ({ label: r.querySelector('.fl').value, ftype: r.querySelector('.ft').value, required: r.querySelector('.fr').checked })).filter(f => f.label.trim());
+  try { await api('/field-config', { method:'PUT', body: { company_id: companyId, doc_type: t, fields } }); toast('Fields saved'); } catch (e) { toast(e.message, true); }
+}
+
+route();
+</script>
+</body>
+</html>

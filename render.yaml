@@ -1,0 +1,20 @@
+# Render Blueprint: creates the API (backend) as a free web service.
+# The website itself is deployed separately on Vercel, see vercel.json.
+services:
+  - type: web
+    name: p2p-portal-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: cd backend && uvicorn app:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: DEMO_MODE        # 1 shows the quick-login buttons and the demo password. Set 0 for anything real.
+        value: "1"
+      - key: MAX_UPLOAD_MB    # keep small: Vercel limits the size of proxied requests
+        value: "4"
+      # Optional, keeps data across restarts. Create a Render Postgres, then paste its Internal Database URL:
+      # - key: DATABASE_URL
+      #   value: postgres://...
